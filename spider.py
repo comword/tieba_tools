@@ -31,6 +31,15 @@ class clawer:
 			res = f.read().decode('utf-8')
 		return res
 
+	def get_title(self,tid):
+		req = urllib.request.Request("https://tieba.baidu.com/p/%s" % tid)
+		req.add_header('User-Agent', 'Mozilla/5.0 (Linux; Android 7.1.1; Nexus 6P Build/N4F26J) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.91 Mobile Safari/537.36')
+		req.add_header('Accept', '"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"')
+		with urllib.request.urlopen(req) as f:
+			res = f.read().decode('utf-8')
+		tmp = re.search('\<title\>(.*?)\<\/title\>',res)
+		return tmp.group(1)
+
 class html_helper(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
@@ -113,7 +122,7 @@ class tb_spider:
 		tmp = re.sub('\<style.*?style>', '', tmp) #remove all style
 		tmp = re.sub('\<div\s+class=.?\"(?!content|user_name|f|list?).*?\".*?div>', '', tmp) #remove all divs with garbage class
 		tmp = re.sub('\<div\s+class=.?\"list.{0,15}?operation.*?div>', '', tmp)
-		tmp = re.sub('data-.{0,10}?=.?(\"|\').*?(\"|\')', '', tmp)
+		#tmp = re.sub('data-.{0,10}?=.?(\"|\').*?(\"|\')', '', tmp)
 		tmp = re.sub('\<li\s+class=.?\"{0,15}?\".*?li>', '', tmp)
 		tmp = re.sub('\s+class\=.?\"(?!content|user_|list_item_top_avatar|list_item_time?).*?\"', '', tmp)
 		return tmp
@@ -123,6 +132,9 @@ class tb_spider:
 		pg = self.clawer.get_url(req)
 		pg = self.json_filter(pg)
 		self.length = self.get_length(pg)
+		self.title = self.clawer.get_title(self.tid)
+		if self.out_p == None:
+			self.out_p = self.title
 		if(self.begin == None or self.begin == 0):
 			self.begin = 0
 		if(self.end == None):
