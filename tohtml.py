@@ -9,6 +9,7 @@ class writer:
 	def w_process(self,dics):
 		return dics
 
-	def go_writer(self,dics):
-		for posts in dics:
+	def go_writer(self,lists,conf):
+		out = conf.out_p
+		for posts in lists:
 			pass
