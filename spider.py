@@ -32,31 +32,60 @@ class clawer:
 		return res
 
 class html_helper(HTMLParser):
-	def rst_buf(self):
-		self.data_buf = None
-		self.tag_n_buf = None
-		self.tag_a_buf = None
+	def __init__(self):
+	    HTMLParser.__init__(self)
+#		self.recording = 0
+	    self.data = dict()
 	def handle_starttag(self, tag, attrs):
-		self.tag_n_buf = tag
-		self.tag_a_buf = attrs
+		try:
+			if tag == "li": #get li data
+				for k,v in attrs:
+					if k == "tid" or k == "fn":
+						self.data[k] = v
+			if tag == "img": #get avatar
+				for index,item in enumerate(attrs):
+					if item[0] == 'alt' and item[1] == '头像':
+						self.data["avatar_src"] = attrs[0][1]
+		except:
+			print("A error happened in processing starttag")
+			return
 	def handle_data(self, data):
-		self.data_buf = data
+		pass
+	def handle_endtag(self, tag):
+		pass
 	def get_post(self,html):
 		m = re.findall('\<li\s+tid=\"\d+\".*?\<\/li\>',html)
-		print(m)
+		for it in m:
+			self.data["poster_name"] = self.get_poster(it)
+			self.set_flags(it)
+			self.data["post_date"] = self.get_posttime(it)
+			self.data["m_content"] = self.get_maincontent(it)
+			self.feed(it)
+			print(self.data)
 	def get_forumname(self,pg):
-		tmp = re.search('\<h.?\>.*?\>',pg)
+		tmp = re.search('\<h.?\>(.*?)\<',pg)
 		if tmp != None:
-			self.feed(tmp.group(0))
+			return tmp.group(1)
+		return None
+	def get_poster(self,post):
+		tmp = re.search('class\=\"user_name\"\>(\S+)\<\/a\>',post)
+		if tmp != None:
+			return tmp.group(1)
+		return None
+	def set_flags(self,post):
+		tmp = re.search('\<HAVESUBPOST\>',post)
+		if tmp != None:
+			self.data["fl_SUBPOST"] = True
 		else:
-			return None
-		if self.tag_n_buf == "h3":
-			res = self.data_buf
-			self.rst_buf()
-			return res
-		else:
-			return None
-
+			self.data["fl_SUBPOST"] = False
+	def get_maincontent(self,post):
+		tmp = re.search('\<div\s+?class\=\"content\"\s+?lz\=\".\"\>\s+(.*?)\<\/div\>',post)
+		if tmp != None:
+			return tmp.group(1)
+	def get_posttime(self,post):
+		tmp = re.search('\<span\s+?class\=\"list_item_time\"\>(\d{4}-\d{1,2}-\d{1,2})\<\/span\>',post)
+		if tmp != None:
+			return tmp.group(1)
 class tb_spider:
 	def __init__(self,procer):
 		self.tid = 0
@@ -68,7 +97,6 @@ class tb_spider:
 		self.procermod = imp.load_module(procer, f, filename, description)
 		self.clawer = clawer()
 		self.html_parser = html_helper()
-		self.html_parser.rst_buf()
 		self.writer = self.procermod.writer()
 
 	def get_length(self,pg):
@@ -105,8 +133,10 @@ class tb_spider:
 			pg = self.clawer.get_url(req)
 			pg = self.json_filter(pg)
 			html = json.loads(pg)["data"]["html"]
-			html = re.sub('\<li\s+pid\=\"\d+\".*?还有\d+条回复.{0,5}a\>','<HAVELONGSUBPOST>',html) #mark posts in post
-			html = re.sub('\<\/li\>\<li\s+pid\=\"\d+\".*?\>','<HAVESUBPOST>',html) #mark posts in post
+			#print(html)
+			#html = re.sub('\<a\s+href\=\"javascript\:\;\"\>还有\d+条回复…\<\/a\>','<HAVELONGSUBPOST>',html) #mark posts in post
+			html = re.sub('\<ul\>.*?\<\/ul>','<HAVESUBPOST>',html)
+			html = re.sub('\<a\s+href\=\"javascript\:\;\"\>还有\d+条回复…\<\/a\>','',html)
 			forumname = self.html_parser.get_forumname(html)
 			self.html_parser.get_post(html)
 			#if (res == None):

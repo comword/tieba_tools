@@ -5,11 +5,16 @@ import urllib.parse
 import os,yaml
 import argparse
 
+TOKEN_URL = "https://passport.baidu.com/v2/api/?getapi&tpl=mn&apiver=v3"
+LOGIN_URL = "https://passport.baidu.com/v2/api/?login"
+
+reg_token = re.compile("\"token\"\s+:\s+\"(\w+)\"")
+
 class login_col:
     def __init__(self):
         pass
-    def login(self,uname,password):
-        pass
+    def login_withpassword(self,uname,password):
+        sign_url = 'http://c.tieba.baidu.com/c/c/forum/sign'
     def _make_sign_request(tieba, fid, tbs, BDUSS):
         sign_url = 'http://c.tieba.baidu.com/c/c/forum/sign'
         sign_request = urllib.parse.urlencode({"BDUSS": BDUSS, "_client_id": "03-00-DA-59-05-00-72-96-06-00-01-00-04-00-4C-43-01-00-34-F4-02-00-BC-25-09-00-4E-36", "_client_type":
